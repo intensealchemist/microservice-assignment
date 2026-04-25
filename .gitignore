@@ -1,0 +1,28 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+
+# Environment files (keep local secrets out of git)
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Build artifacts (if any at root)
+/target/
+/build/
+
+# Docker volumes (if persisted locally)
+postgres_data/
+redis_data/

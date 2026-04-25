@@ -11,8 +11,8 @@
 	<groupId>com.assignment</groupId>
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<name>microservice-assignment</name>
+	<description>backend for social post/bot system with redis guardrails</description>
 	<url/>
 	<licenses>
 		<license/>
