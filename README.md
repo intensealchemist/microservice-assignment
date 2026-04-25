@@ -110,6 +110,63 @@ Boolean ok = redisTemplate.opsForValue()
 if (!ok) throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS);
 ```
 
+## Thread Safety: How Atomic Locks Work
+
+The guardrails use Redis for thread safety instead of Java locks. This is the key part of the assignment.
+
+### Why Redis
+
+Redis is single-threaded. All commands execute one by one in order. This means:
+- If 200 bots send requests at exact same millisecond
+- Their INCR commands line up in a queue
+- Each executes one by one
+- Result: exactly 100 succeed 100 fail
+
+No race condition possible because Redis does not process commands in parallel.
+
+### How the atomic counter works
+
+```
+Bot 1 request: INCR post:1:bot_count -> Redis returns 1 (allowed)
+Bot 2 request: INCR post:1:bot_count -> Redis returns 2 (allowed)
+...
+Bot 100 request: INCR post:1:bot_count -> Redis returns 100 (allowed)
+Bot 101 request: INCR post:1:bot_count -> Redis returns 101 (rejected)
+Bot 102 request: INCR post:1:bot_count -> Redis returns 102 (rejected)
+```
+
+If we used a Java HashMap instead:
+```
+Thread 1: read count (99)
+Thread 2: read count (99)
+Thread 1: increment to 100
+Thread 2: increment to 100
+Result: 100 bot comments but 2 more got through. Race condition.
+```
+
+### Rollback mechanism
+
+If count exceeds 100 we do DECR to undo:
+```java
+Long count = redisTemplate.opsForValue().increment(key);
+if (count > 100) {
+    redisTemplate.opsForValue().decrement(key); // rollback
+    return false;
+}
+```
+
+This rollback is also atomic because DECR is a single Redis command.
+
+### Stateless application
+
+All state lives in Redis:
+- Bot counters
+- Cooldown timers
+- Notification queues
+- Virality scores
+
+No Java static variables. No synchronized blocks. Application can run on 10 servers behind load balancer and still enforce exact 100 bot limit because they all talk to same Redis.
+
 ## Notification batching
 When bot interacts with user's post:
 
